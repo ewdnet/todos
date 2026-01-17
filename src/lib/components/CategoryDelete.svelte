@@ -4,9 +4,10 @@
 	import { animation } from '$lib/animationCss';
 	import { TrashIcon, XIcon } from '@lucide/svelte';
 	import { deleteCategory } from '$lib/api/categories.remote';
+	import type { TaskItem } from '$lib/types';
 	const iconSize = 16;
 
-	let { category } = $props<{ category: { id: string; name: string } }>();
+	let { category } = $props<{ category: { id: string; name: string; tasks: TaskItem[] } }>();
 
 	let open = $state(false);
 	const categoryForm = $derived.by(() => deleteCategory.for(category.id));
@@ -25,7 +26,11 @@
 					>Realy delete the Category?</Dialog.Title
 				>
 				<Dialog.Description>
-					<p class="pb-8 text-center">All tasks in the category are also deleted.</p>
+					{#if category.tasks.length}
+						<p class="pb-8 text-center text-warning-500">
+							All tasks in the category are also deleted.
+						</p>
+					{/if}
 					<form
 						{...categoryForm.enhance(async ({ submit }) => {
 							try {

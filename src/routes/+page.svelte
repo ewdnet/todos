@@ -75,7 +75,7 @@
 		<header>
 			<h1 class="pb-4 h4"><TasksPageTitle {categories} /></h1>
 			<div class="flex flex-row-reverse items-center justify-between gap-4 pb-4">
-				<div><TaskCreate {categories} /></div>
+				<TaskCreate {categories} />
 				<TaskStatus {tasks} />
 			</div>
 		</header>
