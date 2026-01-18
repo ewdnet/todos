@@ -5,12 +5,29 @@
 	import { TrashIcon, XIcon } from '@lucide/svelte';
 	import { deleteCategory } from '$lib/api/categories.remote';
 	import type { TaskItem } from '$lib/types';
+	import { toaster } from '$lib/toaster';
 	const iconSize = 16;
 
 	let { category } = $props<{ category: { id: string; name: string; tasks: TaskItem[] } }>();
 
 	let open = $state(false);
 	const categoryForm = $derived.by(() => deleteCategory.for(category.id));
+
+	$effect(() => {
+		if (!categoryForm.result) return;
+
+		const t = String(categoryForm.result.type);
+		if (t === 'error')
+			toaster.error({
+				title: categoryForm.result.title,
+				description: categoryForm.result.description
+			});
+		if (t === 'success')
+			toaster.success({
+				title: categoryForm.result.title,
+				description: categoryForm.result.description
+			});
+	});
 </script>
 
 <Dialog {open} onOpenChange={(details: { open: boolean }) => (open = details.open)}>
@@ -33,13 +50,11 @@
 					{/if}
 					<form
 						{...categoryForm.enhance(async ({ submit }) => {
-							try {
-								await submit();
+							await submit();
+							if (categoryForm.result) {
 								open = false;
 								activeTab.value = 'categories';
 								paginatorReset.value = 1;
-							} catch (error) {
-								console.error('Failed to delete category', error);
 							}
 						})}
 					>

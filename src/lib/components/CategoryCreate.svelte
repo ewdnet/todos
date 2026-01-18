@@ -4,11 +4,28 @@
 	import { createCategory } from '$lib/api/categories.remote';
 	import { animation } from '$lib/animationCss';
 	import { TagIcon, XIcon } from '@lucide/svelte';
+	import { toaster } from '$lib/toaster';
 	const iconSize = 16;
 
 	let open = $state(false);
 	const categoryFormKey = $state(`create-category-${crypto.randomUUID()}`);
 	const categoryForm = $derived.by(() => createCategory.for(categoryFormKey));
+
+	$effect(() => {
+		if (!categoryForm.result) return;
+
+		const t = String(categoryForm.result.type);
+		if (t === 'error')
+			toaster.error({
+				title: categoryForm.result.title,
+				description: categoryForm.result.description
+			});
+		if (t === 'success')
+			toaster.success({
+				title: categoryForm.result.title,
+				description: categoryForm.result.description
+			});
+	});
 </script>
 
 <Dialog {open} onOpenChange={(details: { open: boolean }) => (open = details.open)}>
@@ -25,23 +42,24 @@
 					<form
 						class="space-y-4"
 						{...categoryForm.enhance(async ({ form, submit }) => {
-							try {
-								await submit();
+							await submit();
+							if (categoryForm.result?.type === 'success') {
 								form.reset();
 								open = false;
 								searchTerm.value = '';
 								categoryStatus.value = '';
 								activeTab.value = 'categories';
 								paginatorReset.value = 1;
-							} catch (error) {
-								console.error('Failed to create category', error);
 							}
 						})}
 					>
 						<fieldset class="py-4">
 							<label for="name" class="label">
-								<span class="label-text">Category Nme</span>
+								<span class="label-text">Category Name</span>
 								<input id="name" class="input" name="name" required />
+								{#each categoryForm.fields.name.issues() ?? [] as issue}
+									<p class="card preset-filled-error-200-800 p-4">{issue.message}</p>
+								{/each}
 							</label>
 						</fieldset>
 						<div class="flex items-center justify-center gap-8">

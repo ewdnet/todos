@@ -19,20 +19,50 @@ export const getCategories = query(async () => {
 	return categories;
 });
 
-export const createCategory = form(categoryCreate, async ({ name }, issue) => {
+export const createCategory = form(categoryCreate, async ({ name }) => {
 	const existing = await prisma.category.findFirst({ where: { name } });
 
-	if (existing) invalid(issue.name('Category name already exists.'));
+	if (existing)
+		return {
+			type: 'error',
+			title: 'Create Category',
+			description: `Category "${name}" already exists.`
+		};
 
-	const category = await prisma.category.create({
-		data: { id: crypto.randomUUID(), name }
-	});
+	try {
+		await prisma.category.create({ data: { id: crypto.randomUUID(), name } });
+	} catch (error) {
+		console.error(error);
+		return {
+			type: 'error',
+			title: 'Creating the category failed',
+			description: 'Failed to create category.'
+		};
+	}
 
-	return category;
+	return {
+		type: 'success',
+		title: 'Create Category',
+		description: `Category "${name}" created successfully.`
+	};
 });
 
 export const deleteCategory = form(idSchema, async ({ id }) => {
-	await prisma.category.delete({ where: { id } });
+	try {
+		await prisma.category.delete({ where: { id } });
+	} catch (error) {
+		console.error(error);
+		return {
+			type: 'error',
+			title: 'Deleting the category failed',
+			description: 'Failed to delete category.'
+		};
+	}
+	return {
+		type: 'success',
+		title: 'Category Deleting',
+		description: 'Category deleted successfully.'
+	};
 });
 
 export const deleteCategories = form(idMultipleSchema, async ({ id }, issue) => {
