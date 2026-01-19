@@ -79,7 +79,7 @@ export const deleteCategory = form(categorySchema, async ({ id, name }) => {
 	return {
 		type: 'success',
 		title: 'Category Deleting',
-		description: `Category ${name} deleted successfully.`
+		description: `Category "${name}" deleted successfully.`
 	};
 });
 
