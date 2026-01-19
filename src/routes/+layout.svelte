@@ -45,7 +45,11 @@
 </header>
 <main class="flex-auto {outer}">
 	{#key activeTab.value}
-		<article class={inner} in:fade={{ delay: 250, duration: 200 }} out:fade={{ duration: 200 }}>
+		<article
+			class={inner}
+			in:fade={{ delay: 250, duration: 200 }}
+			out:fade={{ delay: 0, duration: 200 }}
+		>
 			{@render children()}
 		</article>
 	{/key}

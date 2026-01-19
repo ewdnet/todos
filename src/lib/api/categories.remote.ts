@@ -1,14 +1,15 @@
 import { form, query } from '$app/server';
 import { invalid } from '@sveltejs/kit';
+import { safeParse } from 'valibot';
 import { prisma } from '$lib/prisma';
-import { categoryCreate, idMultipleSchema, idSchema } from '$lib/valibot';
+import { categorySchema, idMultipleSchema } from '$lib/valibot';
 
-function parseIds(raw: string) {
+const parseIds = (raw: string) => {
 	return raw
 		.split(',')
 		.map((id) => id.trim())
 		.filter(Boolean);
-}
+};
 
 export const getCategories = query(async () => {
 	const categories = await prisma.category.findMany({
@@ -19,18 +20,36 @@ export const getCategories = query(async () => {
 	return categories;
 });
 
-export const createCategory = form(categoryCreate, async ({ name }) => {
-	const existing = await prisma.category.findFirst({ where: { name } });
+export const createCategory = form('unchecked', async ({ name }) => {
+	const normalizedName = Array.isArray(name) ? name[0] : name;
+	if (typeof normalizedName !== 'string') {
+		return {
+			type: 'error',
+			title: 'Creating the category failed',
+			description: 'Category name must be a string.'
+		};
+	}
 
+	const result = safeParse(categorySchema, { id: crypto.randomUUID(), name: normalizedName });
+	if (!result.success) {
+		const issues = result.issues.map((issue) => issue.message).join('\n');
+		return {
+			type: 'error',
+			title: 'Failed to create category',
+			description: issues
+		};
+	}
+
+	const existing = await prisma.category.findFirst({ where: { name: normalizedName } });
 	if (existing)
 		return {
 			type: 'error',
 			title: 'Create Category',
-			description: `Category "${name}" already exists.`
+			description: `Category "${normalizedName}" already exists.`
 		};
 
 	try {
-		await prisma.category.create({ data: { id: crypto.randomUUID(), name } });
+		await prisma.category.create({ data: { id: crypto.randomUUID(), name: normalizedName } });
 	} catch (error) {
 		console.error(error);
 		return {
@@ -43,11 +62,11 @@ export const createCategory = form(categoryCreate, async ({ name }) => {
 	return {
 		type: 'success',
 		title: 'Create Category',
-		description: `Category "${name}" created successfully.`
+		description: `Category "${normalizedName}" created successfully.`
 	};
 });
 
-export const deleteCategory = form(idSchema, async ({ id }) => {
+export const deleteCategory = form(categorySchema, async ({ id, name }) => {
 	try {
 		await prisma.category.delete({ where: { id } });
 	} catch (error) {
@@ -61,7 +80,7 @@ export const deleteCategory = form(idSchema, async ({ id }) => {
 	return {
 		type: 'success',
 		title: 'Category Deleting',
-		description: 'Category deleted successfully.'
+		description: `Category ${name} deleted successfully.`
 	};
 });
 

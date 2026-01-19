@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { CategoryItem } from '$lib/types';
-	import { categorySelected, searchTerm, taskStatus } from '$lib/stores.svelte';
+	import { accordionReset, categorySelected, searchTerm, taskStatus } from '$lib/stores.svelte';
 	import { Portal, Tooltip } from '@skeletonlabs/skeleton-svelte';
 	import { ListChecksIcon, RefreshCcwIcon } from '@lucide/svelte';
 	const iconSize = 16;
@@ -38,7 +38,7 @@
 	<Tooltip positioning={{ placement: 'top' }}>
 		<Tooltip.Trigger
 			type="button"
-			onclick={() => (categorySelected.value = '')}
+			onclick={() => ((categorySelected.value = ''), (accordionReset.value = []))}
 			class="btn-icon btn btn-icon-sm rounded-full preset-outlined-primary-500 bg-primary-500/15"
 		>
 			<RefreshCcwIcon size={iconSize} />

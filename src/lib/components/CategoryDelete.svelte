@@ -1,11 +1,11 @@
 <script lang="ts">
+	import type { TaskItem } from '$lib/types';
 	import { Dialog, Portal } from '@skeletonlabs/skeleton-svelte';
 	import { activeTab, paginatorReset } from '$lib/stores.svelte';
-	import { animation } from '$lib/animationCss';
-	import { TrashIcon, XIcon } from '@lucide/svelte';
 	import { deleteCategory } from '$lib/api/categories.remote';
-	import type { TaskItem } from '$lib/types';
+	import { animation } from '$lib/animationCss';
 	import { toaster } from '$lib/toaster';
+	import { TrashIcon, XIcon } from '@lucide/svelte';
 	const iconSize = 16;
 
 	let { category } = $props<{ category: { id: string; name: string; tasks: TaskItem[] } }>();
@@ -14,19 +14,26 @@
 	const categoryForm = $derived.by(() => deleteCategory.for(category.id));
 
 	$effect(() => {
+		if (!categoryForm.fields.id.issues()?.length) return;
+		const message = {
+			title: 'Delete Category',
+			description: categoryForm.fields.id
+				.issues()
+				?.map((i) => i.message)
+				.join(' ')
+		};
+		toaster.error(message);
+	});
+	$effect(() => {
 		if (!categoryForm.result) return;
 
-		const t = String(categoryForm.result.type);
-		if (t === 'error')
-			toaster.error({
-				title: categoryForm.result.title,
-				description: categoryForm.result.description
-			});
-		if (t === 'success')
-			toaster.success({
-				title: categoryForm.result.title,
-				description: categoryForm.result.description
-			});
+		const { type } = categoryForm.result;
+		let message = {
+			title: categoryForm.result.title,
+			description: categoryForm.result.description
+		};
+		if (type === 'error') toaster.error(message);
+		if (type === 'success') toaster.success(message);
 	});
 </script>
 
@@ -59,6 +66,7 @@
 						})}
 					>
 						<input type="hidden" name="id" value={category.id} />
+						<input type="hidden" name="name" value={category.name} />
 						<div class="flex items-center justify-center gap-8">
 							<Dialog.CloseTrigger class="btn preset-tonal btn-sm">
 								<XIcon size={iconSize} />
