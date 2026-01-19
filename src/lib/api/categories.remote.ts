@@ -21,16 +21,15 @@ export const getCategories = query(async () => {
 });
 
 export const createCategory = form('unchecked', async ({ name }) => {
-	const normalizedName = Array.isArray(name) ? name[0] : name;
-	if (typeof normalizedName !== 'string') {
+	name = Array.isArray(name) ? name[0] : name;
+	if (typeof name !== 'string') {
 		return {
 			type: 'error',
 			title: 'Creating the category failed',
 			description: 'Category name must be a string.'
 		};
 	}
-
-	const result = safeParse(categorySchema, { id: crypto.randomUUID(), name: normalizedName });
+	const result = safeParse(categorySchema, { id: crypto.randomUUID(), name });
 	if (!result.success) {
 		const issues = result.issues.map((issue) => issue.message).join('\n');
 		return {
@@ -40,16 +39,16 @@ export const createCategory = form('unchecked', async ({ name }) => {
 		};
 	}
 
-	const existing = await prisma.category.findFirst({ where: { name: normalizedName } });
+	const existing = await prisma.category.findFirst({ where: { name } });
 	if (existing)
 		return {
 			type: 'error',
 			title: 'Create Category',
-			description: `Category "${normalizedName}" already exists.`
+			description: `Category "${name}" already exists.`
 		};
 
 	try {
-		await prisma.category.create({ data: { id: crypto.randomUUID(), name: normalizedName } });
+		await prisma.category.create({ data: { id: crypto.randomUUID(), name } });
 	} catch (error) {
 		console.error(error);
 		return {
@@ -62,7 +61,7 @@ export const createCategory = form('unchecked', async ({ name }) => {
 	return {
 		type: 'success',
 		title: 'Create Category',
-		description: `Category "${normalizedName}" created successfully.`
+		description: `Category "${name}" created successfully.`
 	};
 });
 
