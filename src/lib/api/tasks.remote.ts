@@ -1,7 +1,7 @@
 import { form, query } from '$app/server';
 import { invalid } from '@sveltejs/kit';
 import { prisma } from '$lib/prisma';
-import { idMultipleSchema, idSchema, taskCreate, taskSchema } from '$lib/valibot';
+import { idMultipleSchema, taskCreate, taskSchema } from '$lib/valibot';
 
 const toTaskItem = (task: {
 	id: string;
@@ -76,7 +76,7 @@ export const updateTask = form(taskSchema, async (data, issue) => {
 	return toTaskItem(task);
 });
 
-export const deleteTask = form(idSchema, async ({ id }) => {
+export const deleteTask = form(taskSchema, async ({ id }) => {
 	await prisma.task.delete({ where: { id } });
 });
 
