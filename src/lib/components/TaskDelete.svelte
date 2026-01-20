@@ -5,11 +5,23 @@
 	import { animation } from '$lib/animationCss';
 	import { TrashIcon, XIcon } from '@lucide/svelte';
 	import { deleteTask } from '$lib/api/tasks.remote';
+	import { toaster } from '$lib/toaster';
 	const iconSize = 16;
 
 	let { task } = $props<{ task: TaskItem }>();
 	let open = $state(false);
 	const taskForm = $derived.by(() => deleteTask.for(task.id));
+
+	$effect(() => {
+		if (!taskForm.result) return;
+		const { type } = taskForm.result;
+		const message = {
+			title: taskForm.result.title,
+			description: taskForm.result.description
+		};
+		if (type === 'error') toaster.error(message);
+		if (type === 'success') toaster.success(message);
+	});
 </script>
 
 <Dialog {open} onOpenChange={(details: { open: boolean }) => (open = details.open)}>
@@ -26,18 +38,17 @@
 					<form
 						class="space-y-4"
 						{...taskForm.enhance(async ({ submit }) => {
-							try {
-								await submit();
+							await submit();
+							if (taskForm.result?.type === 'success') {
 								open = false;
 								activeTab.value = 'tasks';
 								paginatorReset.value = 1;
-							} catch (error) {
-								console.error('Failed to delete task', error);
 							}
 						})}
 					>
 						<fieldset>
 							<input type="hidden" name="id" value={task.id} />
+							<input type="hidden" name="title" value={task.title} />
 						</fieldset>
 						<div class="flex items-center justify-center gap-8">
 							<Dialog.CloseTrigger class="btn preset-tonal btn-sm">

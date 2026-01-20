@@ -5,6 +5,7 @@
 	import { animation } from '$lib/animationCss';
 	import { CheckIcon, PencilIcon, XIcon } from '@lucide/svelte';
 	import { updateTask } from '$lib/api/tasks.remote';
+	import { toaster } from '$lib/toaster';
 	const iconSize = 16;
 
 	let { categories, task } = $props<{ categories: CategoryItem[]; task: TaskItem }>();
@@ -29,6 +30,17 @@
 		if (progress > 75 && progress <= 100) return 'bg-success-500/50';
 		return '';
 	};
+
+	$effect(() => {
+		if (!taskForm.result) return;
+		const { type } = taskForm.result;
+		const message = {
+			title: taskForm.result.title,
+			description: taskForm.result.description
+		};
+		if (type === 'error') toaster.error(message);
+		if (type === 'success') toaster.success(message);
+	});
 </script>
 
 <Dialog {open} onOpenChange={(details: { open: boolean }) => (open = details.open)}>
@@ -45,13 +57,11 @@
 					<form
 						class="space-y-4 card preset-filled-surface-300-700 p-4"
 						{...taskForm.enhance(async ({ submit }) => {
-							try {
-								await submit();
+							await submit();
+							if (taskForm.result?.type === 'success') {
 								open = false;
 								activeTab.value = 'tasks';
 								paginatorReset.value = 1;
-							} catch (error) {
-								console.error('Failed to update task', error);
 							}
 						})}
 					>

@@ -1,21 +1,8 @@
 import { form, query } from '$app/server';
-import { invalid } from '@sveltejs/kit';
+import { safeParse } from 'valibot';
 import { prisma } from '$lib/prisma';
-import { idMultipleSchema, taskCreate, taskSchema } from '$lib/valibot';
-
-const toTaskItem = (task: {
-	id: string;
-	title: string;
-	content: string | null;
-	progress: number;
-	categoryId: string;
-	createdAt: number;
-	updatedAt: number;
-}) => ({
-	...task,
-	createdAt: new Date(task.createdAt),
-	updatedAt: new Date(task.updatedAt)
-});
+import { deleteArraySchema, deleteSchema, taskCreate, taskSchema } from '$lib/valibot';
+import type { TaskItem } from '$lib/types';
 
 function parseIds(raw: string) {
 	return raw
@@ -25,65 +12,204 @@ function parseIds(raw: string) {
 }
 
 export const getTasks = query(async () => {
-	const tasks = await prisma.task.findMany({
+	const result = await prisma.task.findMany({
 		orderBy: { updatedAt: 'desc' }
 	});
-
-	return tasks.map(toTaskItem);
+	const tasks: TaskItem[] = result.map((result) => ({
+		...result,
+		createdAt: new Date(result.createdAt),
+		updatedAt: new Date(result.updatedAt)
+	}));
+	return tasks;
 });
 
-export const createTask = form(taskCreate, async ({ title, content, categoryId }, issue) => {
-	const existingTitle = await prisma.task.findFirst({ where: { title } });
+export const createTask = form(
+	'unchecked',
+	async ({
+		title,
+		content,
+		categoryId
+	}: {
+		title: string;
+		content: string;
+		categoryId: string;
+	}) => {
+		const result = safeParse(taskCreate, { title, content, categoryId });
+		if (!result.success) {
+			const issues = result.issues.map((issue) => issue.message).join('\n');
+			return {
+				type: 'error',
+				title: 'Failed to create category',
+				description: issues
+			};
+		}
 
-	if (existingTitle) invalid(issue.title('Task title already exists.'));
+		const existing = await prisma.task.findFirst({ where: { title } });
+		if (existing)
+			return {
+				type: 'error',
+				title: 'Create Task',
+				description: `Task "${title}" already exists.`
+			};
 
-	const now = Date.now();
+		const now = Date.now();
 
-	const task = await prisma.task.create({
-		data: {
-			id: crypto.randomUUID(),
+		try {
+			await prisma.task.create({
+				data: {
+					id: crypto.randomUUID(),
+					title,
+					content: content ?? null,
+					categoryId,
+					createdAt: now,
+					updatedAt: now
+				}
+			});
+		} catch (error) {
+			console.error(error);
+			return {
+				type: 'error',
+				title: 'Creating the task failed',
+				description: 'Failed to create task.'
+			};
+		}
+
+		return {
+			type: 'success',
+			title: 'Create Task',
+			description: `Task "${title}" created successfully.`
+		};
+	}
+);
+
+export const updateTask = form(
+	'unchecked',
+	async ({
+		id,
+		title,
+		content,
+		progress,
+		categoryId
+	}: {
+		id: string;
+		title: string;
+		content: string;
+		progress: number;
+		categoryId: string;
+	}) => {
+		const result = safeParse(taskSchema, {
+			id,
 			title,
-			content: content ?? null,
-			categoryId,
-			createdAt: now,
-			updatedAt: now
+			content,
+			progress,
+			categoryId
+		});
+		if (!result.success) {
+			const issues = result.issues.map((issue) => issue.message).join('\n');
+			return {
+				type: 'error',
+				title: 'Failed to update task',
+				description: issues
+			};
 		}
-	});
 
-	return toTaskItem(task);
-});
+		const existing = await prisma.task.findFirst({ where: { title, NOT: { id } } });
+		if (existing)
+			return {
+				type: 'error',
+				title: 'Create Task',
+				description: `Task "${title}" already exists.`
+			};
 
-export const updateTask = form(taskSchema, async (data, issue) => {
-	const existingTitle = await prisma.task.findFirst({
-		where: { title: data.title, NOT: { id: data.id } }
-	});
+		const updatedAt = Date.now();
 
-	if (existingTitle) invalid(issue.title('Task title already exists.'));
-
-	const updatedAt = Date.now();
-
-	const task = await prisma.task.update({
-		where: { id: data.id },
-		data: {
-			title: data.title,
-			content: data.content ?? null,
-			progress: data.progress ?? 0,
-			categoryId: data.categoryId,
-			updatedAt
+		try {
+			await prisma.task.update({
+				where: { id: id },
+				data: {
+					title: title,
+					content: content ?? null,
+					progress: progress ?? 0,
+					categoryId: categoryId,
+					updatedAt
+				}
+			});
+		} catch (error) {
+			console.error(error);
+			return {
+				type: 'error',
+				title: 'Updating the task failed',
+				description: 'Failed to update task.'
+			};
 		}
-	});
 
-	return toTaskItem(task);
-});
+		return {
+			type: 'success',
+			title: 'Update Task',
+			description: `Task "${title}" updated successfully.`
+		};
+	}
+);
 
-export const deleteTask = form(taskSchema, async ({ id }) => {
-	await prisma.task.delete({ where: { id } });
-});
+export const deleteTask = form(
+	'unchecked',
+	async ({ id, title }: { id: string; title: string }) => {
+		const result = safeParse(deleteSchema, { id });
+		if (!result.success) {
+			const issues = result.issues.map((issue) => issue.message).join('\n');
+			return {
+				type: 'error',
+				title: 'Failed to delete task',
+				description: issues
+			};
+		}
 
-export const deleteTasks = form(idMultipleSchema, async ({ id }, issue) => {
+		try {
+			await prisma.task.delete({ where: { id } });
+		} catch (error) {
+			console.error(error);
+			return {
+				type: 'error',
+				title: 'Deleting the task failed',
+				description: 'Failed to delete task.'
+			};
+		}
+
+		return {
+			type: 'success',
+			title: 'Delete Task',
+			description: `Task "${title}" deleted successfully.`
+		};
+	}
+);
+
+export const deleteTasks = form('unchecked', async ({ id }: { id: string }) => {
 	const ids = parseIds(id);
 
-	if (ids.length === 0) invalid(issue.id('No tasks selected.'));
+	const result = safeParse(deleteArraySchema, { ids });
+	if (!result.success) {
+		const issues = result.issues.map((issue) => issue.message).join('\n');
+		return {
+			type: 'error',
+			title: 'Failed to delete multiple tasks',
+			description: issues
+		};
+	}
 
-	await prisma.task.deleteMany({ where: { id: { in: ids } } });
+	try {
+		await prisma.task.deleteMany({ where: { id: { in: ids } } });
+	} catch (error) {
+		console.error(error);
+		return {
+			type: 'error',
+			title: 'Deleting multiple tasks failed',
+			description: 'Failed to delete the filtered tasks.'
+		};
+	}
+
+	return {
+		type: 'success',
+		title: 'Delete multiple tasks',
+		description: 'Selected tasks deleted successfully.'
+	};
 });

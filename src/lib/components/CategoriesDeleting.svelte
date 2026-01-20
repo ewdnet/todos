@@ -83,7 +83,7 @@
 					<form
 						{...deleteCategoriesForm.enhance(async ({ submit }) => {
 							await submit();
-							if (deleteCategoriesForm.result) {
+							if (deleteCategoriesForm.result?.type === 'success') {
 								open = false;
 								searchTerm.value = '';
 								categoryStatus.value = '';

@@ -11,6 +11,7 @@
 	import { animation } from '$lib/animationCss';
 	import { TrashIcon, XIcon } from '@lucide/svelte';
 	import { deleteTasks } from '$lib/api/tasks.remote';
+	import { toaster } from '$lib/toaster';
 	const iconSize = 16;
 
 	let { tasks } = $props<{ tasks: TaskItem[] }>();
@@ -20,6 +21,18 @@
 	let open = $state(false);
 	const deleteTasksFormKey = $state(`delete-tasks-bulk-${crypto.randomUUID()}`);
 	const deleteTasksForm = $derived.by(() => deleteTasks.for(deleteTasksFormKey));
+
+	$effect(() => {
+		if (!deleteTasksForm.result) return;
+
+		const { type } = deleteTasksForm.result;
+		let message = {
+			title: deleteTasksForm.result.title,
+			description: deleteTasksForm.result.description
+		};
+		if (type === 'error') toaster.error(message);
+		if (type === 'success') toaster.success(message);
+	});
 </script>
 
 {#snippet tooltipTrigger(attrs: TooltipTriggerAttrs)}
@@ -68,16 +81,14 @@
 					</p>
 					<form
 						{...deleteTasksForm.enhance(async ({ submit }) => {
-							try {
-								await submit();
+							await submit();
+							if (deleteTasksForm.result?.type === 'success') {
 								open = false;
 								searchTerm.value = '';
 								taskStatus.value = '';
 								categorySelected.value = '';
 								activeTab.value = 'tasks';
 								paginatorReset.value = 1;
-							} catch (error) {
-								console.error('Failed to delete tasks', error);
 							}
 						})}
 					>

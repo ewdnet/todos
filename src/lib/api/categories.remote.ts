@@ -1,7 +1,7 @@
 import { form, query } from '$app/server';
 import { safeParse } from 'valibot';
 import { prisma } from '$lib/prisma';
-import { categorySchema, idMultipleSchema } from '$lib/valibot';
+import { categorySchema, deleteArraySchema, deleteSchema } from '$lib/valibot';
 
 const parseIds = (raw: string) => {
 	return raw
@@ -59,7 +59,7 @@ export const createCategory = form('unchecked', async ({ name }: { name: string 
 export const deleteCategory = form(
 	'unchecked',
 	async ({ id, name }: { id: string; name: string }) => {
-		const result = safeParse(categorySchema, { id, name });
+		const result = safeParse(deleteSchema, { id });
 		if (!result.success) {
 			const issues = result.issues.map((issue) => issue.message).join('\n');
 			return {
@@ -87,7 +87,9 @@ export const deleteCategory = form(
 );
 
 export const deleteCategories = form('unchecked', async ({ id }: { id: string }) => {
-	const result = safeParse(idMultipleSchema, { id });
+	const ids = parseIds(id);
+
+	const result = safeParse(deleteArraySchema, { ids });
 	if (!result.success) {
 		const issues = result.issues.map((issue) => issue.message).join('\n');
 		return {
@@ -96,8 +98,6 @@ export const deleteCategories = form('unchecked', async ({ id }: { id: string })
 			description: issues
 		};
 	}
-
-	const ids = parseIds(id);
 
 	try {
 		await prisma.category.deleteMany({ where: { id: { in: ids } } });

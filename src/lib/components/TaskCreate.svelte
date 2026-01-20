@@ -11,12 +11,24 @@
 	import { createTask } from '$lib/api/tasks.remote';
 	import { animation } from '$lib/animationCss';
 	import { ListFilterPlusIcon, XIcon } from '@lucide/svelte';
+	import { toaster } from '$lib/toaster';
 	const iconSize = 16;
 
 	let { categories } = $props<{ categories: CategoryItem[] }>();
 	let open = $state(false);
 	const taskFormKey = $state(`create-task-${crypto.randomUUID()}`);
 	const taskForm = $derived.by(() => createTask.for(taskFormKey));
+
+	$effect(() => {
+		if (!taskForm.result) return;
+		const { type } = taskForm.result;
+		const message = {
+			title: taskForm.result.title,
+			description: taskForm.result.description
+		};
+		if (type === 'error') toaster.error(message);
+		if (type === 'success') toaster.success(message);
+	});
 </script>
 
 <Dialog {open} onOpenChange={(details: { open: boolean }) => (open = details.open)}>
@@ -33,8 +45,8 @@
 					<form
 						class="space-y-4 card preset-filled-surface-300-700 p-4"
 						{...taskForm.enhance(async ({ form, submit }) => {
-							try {
-								await submit();
+							await submit();
+							if (taskForm.result?.type === 'success') {
 								form.reset();
 								open = false;
 								searchTerm.value = '';
@@ -42,8 +54,6 @@
 								taskStatus.value = '';
 								activeTab.value = 'tasks';
 								paginatorReset.value = 1;
-							} catch (error) {
-								console.error('Failed to create task', error);
 							}
 						})}
 					>
