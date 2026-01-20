@@ -75,7 +75,7 @@
 						: 'all'} Categories?</Dialog.Title
 				>
 				<Dialog.Description>
-					<p class="pb-8 text-center">
+					<p class="pb-8 text-center text-warning-500">
 						All tasks {searchTerm.value || categoryStatus.value || categorySelected.value
 							? 'in the filtered categories'
 							: ''} are also deleted.
