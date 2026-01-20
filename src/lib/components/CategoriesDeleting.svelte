@@ -11,6 +11,7 @@
 	import { animation } from '$lib/animationCss';
 	import { TrashIcon, XIcon } from '@lucide/svelte';
 	import { deleteCategories } from '$lib/api/categories.remote';
+	import { toaster } from '$lib/toaster';
 	const iconSize = 16;
 
 	let { categories } = $props<{ categories: CategoryItem[] }>();
@@ -20,6 +21,18 @@
 	let open = $state(false);
 	const deleteCategoriesFormKey = $state(`delete-categories-bulk-${crypto.randomUUID()}`);
 	const deleteCategoriesForm = $derived.by(() => deleteCategories.for(deleteCategoriesFormKey));
+
+	$effect(() => {
+		if (!deleteCategoriesForm.result) return;
+
+		const { type } = deleteCategoriesForm.result;
+		let message = {
+			title: deleteCategoriesForm.result.title,
+			description: deleteCategoriesForm.result.description
+		};
+		if (type === 'error') toaster.error(message);
+		if (type === 'success') toaster.success(message);
+	});
 </script>
 
 {#snippet tooltipTrigger(attrs: TooltipTriggerAttrs)}
@@ -69,15 +82,13 @@
 					</p>
 					<form
 						{...deleteCategoriesForm.enhance(async ({ submit }) => {
-							try {
-								await submit();
+							await submit();
+							if (deleteCategoriesForm.result) {
 								open = false;
 								searchTerm.value = '';
 								categoryStatus.value = '';
 								activeTab.value = 'categories';
 								paginatorReset.value = 1;
-							} catch (error) {
-								console.error('Failed to delete categories', error);
 							}
 						})}
 					>

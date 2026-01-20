@@ -1,5 +1,4 @@
 import { form, query } from '$app/server';
-import { invalid } from '@sveltejs/kit';
 import { safeParse } from 'valibot';
 import { prisma } from '$lib/prisma';
 import { categorySchema, idMultipleSchema } from '$lib/valibot';
@@ -20,15 +19,7 @@ export const getCategories = query(async () => {
 	return categories;
 });
 
-export const createCategory = form('unchecked', async ({ name }) => {
-	name = Array.isArray(name) ? name[0] : name;
-	if (typeof name !== 'string') {
-		return {
-			type: 'error',
-			title: 'Creating the category failed',
-			description: 'Category name must be a string.'
-		};
-	}
+export const createCategory = form('unchecked', async ({ name }: { name: string }) => {
 	const result = safeParse(categorySchema, { id: crypto.randomUUID(), name });
 	if (!result.success) {
 		const issues = result.issues.map((issue) => issue.message).join('\n');
@@ -65,46 +56,63 @@ export const createCategory = form('unchecked', async ({ name }) => {
 	};
 });
 
-export const deleteCategory = form('unchecked', async ({ id, name }) => {
-	id = Array.isArray(id) ? id[0] : id;
-	name = Array.isArray(name) ? name[0] : name;
-	if (typeof id !== 'string' || typeof name !== 'string') {
+export const deleteCategory = form(
+	'unchecked',
+	async ({ id, name }: { id: string; name: string }) => {
+		const result = safeParse(categorySchema, { id, name });
+		if (!result.success) {
+			const issues = result.issues.map((issue) => issue.message).join('\n');
+			return {
+				type: 'error',
+				title: 'Failed to delete category',
+				description: issues
+			};
+		}
+		try {
+			await prisma.category.delete({ where: { id } });
+		} catch (error) {
+			console.error(error);
+			return {
+				type: 'error',
+				title: 'Deleting the category failed',
+				description: 'Failed to delete category.'
+			};
+		}
 		return {
-			type: 'error',
-			title: 'Deleting the category failed',
-			description: 'Invalid category ID or name!'
+			type: 'success',
+			title: 'Category Deleting',
+			description: `Category "${name}" deleted successfully.`
 		};
 	}
-	const result = safeParse(categorySchema, { id, name });
+);
+
+export const deleteCategories = form('unchecked', async ({ id }: { id: string }) => {
+	const result = safeParse(idMultipleSchema, { id });
 	if (!result.success) {
 		const issues = result.issues.map((issue) => issue.message).join('\n');
 		return {
 			type: 'error',
-			title: 'Failed to delete category',
+			title: 'Failed to delete multiple categories',
 			description: issues
 		};
 	}
+
+	const ids = parseIds(id);
+
 	try {
-		await prisma.category.delete({ where: { id } });
+		await prisma.category.deleteMany({ where: { id: { in: ids } } });
 	} catch (error) {
 		console.error(error);
 		return {
 			type: 'error',
-			title: 'Deleting the category failed',
-			description: 'Failed to delete category.'
+			title: 'Deleting multiple categories failed',
+			description: 'Failed to delete the filtered categories and their tasks.'
 		};
 	}
+
 	return {
 		type: 'success',
-		title: 'Category Deleting',
-		description: `Category "${name}" deleted successfully.`
+		title: 'Delete multiple categories',
+		description: 'The filtered categories and their tasks have been deleted.'
 	};
-});
-
-export const deleteCategories = form(idMultipleSchema, async ({ id }, issue) => {
-	const ids = parseIds(id);
-
-	if (ids.length === 0) invalid(issue.id('No categories selected.'));
-
-	await prisma.category.deleteMany({ where: { id: { in: ids } } });
 });
