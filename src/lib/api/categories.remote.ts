@@ -65,7 +65,25 @@ export const createCategory = form('unchecked', async ({ name }) => {
 	};
 });
 
-export const deleteCategory = form(categorySchema, async ({ id, name }) => {
+export const deleteCategory = form('unchecked', async ({ id, name }) => {
+	id = Array.isArray(id) ? id[0] : id;
+	name = Array.isArray(name) ? name[0] : name;
+	if (typeof id !== 'string' || typeof name !== 'string') {
+		return {
+			type: 'error',
+			title: 'Deleting the category failed',
+			description: 'Invalid category ID or name!'
+		};
+	}
+	const result = safeParse(categorySchema, { id, name });
+	if (!result.success) {
+		const issues = result.issues.map((issue) => issue.message).join('\n');
+		return {
+			type: 'error',
+			title: 'Failed to delete category',
+			description: issues
+		};
+	}
 	try {
 		await prisma.category.delete({ where: { id } });
 	} catch (error) {

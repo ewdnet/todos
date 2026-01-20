@@ -14,17 +14,6 @@
 	const categoryForm = $derived.by(() => deleteCategory.for(category.id));
 
 	$effect(() => {
-		if (!categoryForm.fields.id.issues()?.length) return;
-		const message = {
-			title: 'Delete Category',
-			description: categoryForm.fields.id
-				.issues()
-				?.map((i) => i.message)
-				.join(' ')
-		};
-		toaster.error(message);
-	});
-	$effect(() => {
 		if (!categoryForm.result) return;
 
 		const { type } = categoryForm.result;
