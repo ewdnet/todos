@@ -3,9 +3,9 @@
 		"*.css": "tailwindcss"
 	},
 	"[html]": {
-		"editor.defaultFormatter": "prettier.prettier-vscode"
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
 	"[svelte]": {
-		"editor.defaultFormatter": "prettier.prettier-vscode"
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	}
 }
