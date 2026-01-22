@@ -31,11 +31,11 @@
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.14.0",
 		"globals": "^16.5.0",
-		"prettier": "^3.8.0",
+		"prettier": "^3.8.1",
 		"prettier-plugin-svelte": "^3.4.1",
 		"prettier-plugin-tailwindcss": "^0.7.2",
-		"prisma": "^7.2.0",
-		"svelte": "^5.47.1",
+		"prisma": "^7.3.0",
+		"svelte": "^5.48.0",
 		"svelte-check": "^4.3.5",
 		"tailwindcss": "^4.1.18",
 		"typescript": "^5.9.3",
@@ -46,8 +46,8 @@
 	},
 	"dependencies": {
 		"@lucide/svelte": "^0.562.0",
-		"@prisma/adapter-better-sqlite3": "^7.2.0",
-		"@prisma/client": "^7.2.0",
+		"@prisma/adapter-better-sqlite3": "^7.3.0",
+		"@prisma/client": "^7.3.0",
 		"dotenv": "^17.2.3"
 	}
 }
