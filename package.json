@@ -8,6 +8,7 @@
 		"prisma",
 		"sqlite"
 	],
+	"description": "Tasks with categories and progress bar. Realized with: Sveltekit (remote functions, async), Skeleton UI, Valibot, Prisma, SQLite Database.",
 	"private": true,
 	"version": "1.0.0",
 	"type": "module",
