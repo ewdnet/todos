@@ -19,7 +19,11 @@
 		>
 	{/if}
 </p>
-<div class="py-4">{task.content}</div>
+<div class="py-4 text-sm">
+	{#if task.content !== ''}
+		<p>{@html task.content.replace(/(?:\r\n|\r|\n)/g, '</p><p>')}</p>
+	{/if}
+</div>
 <footer>
 	<p class="flex flex-row-reverse items-center justify-between gap-4">
 		<small>Created at {task.createdAt.toLocaleDateString('en-en')}</small>
