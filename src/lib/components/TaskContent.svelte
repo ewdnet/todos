@@ -5,6 +5,11 @@
 	import TaskUpdate from '$lib/components/TaskUpdate.svelte';
 
 	let { categories, task } = $props<{ categories: CategoryItem[]; task: TaskItem }>();
+
+	const splitLines = (text: string | null | undefined): string[] => {
+		if (!text) return [];
+		return text.split(/\r\n|\r|\n/);
+	};
 </script>
 
 <p class="text-right">
@@ -21,7 +26,9 @@
 </p>
 <div class="py-4 text-sm">
 	{#if task.content !== ''}
-		<p>{@html task.content.replace(/(?:\r\n|\r|\n)/g, '</p><p>')}</p>
+		{#each splitLines(task.content) as line, index (index)}
+			<p>{line}</p>
+		{/each}
 	{/if}
 </div>
 <footer>
